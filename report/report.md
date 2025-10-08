@@ -1,5 +1,5 @@
 # **Big Data Analytics on NYC Taxi Transportation Data**  
-### Part 2: MapReduce & Visualization Analysis  
+### Part 2: MapReduce & Visualisation Analysis  
 **Student Name:** Mmathapelo Thotse  
 **Student Number:** u22888676 
 **Course:** MIT805 - Big Data Analytics  
@@ -21,29 +21,13 @@
 
 ---
 
-## **Executive Summary**
+## **1. Introduction**
 
-This report presents a comprehensive Big Data analysis of the New York City Yellow Taxi trip dataset using MapReduce and visualization techniques. Building on Part 1, this phase extracts actionable insights through distributed processing.
-
-Three MapReduce jobs were implemented:
-1. Peak hour traffic patterns
-2. Tipping behavior across payment types and trip distances
-3. Route profitability analysis
-
-The dataset contains over **10 GB** and **600 million** trip records. Key findings include:
-- Peak demand between 5–7 PM
-- Correlation between trip distance and tipping
-- Most profitable pickup-dropoff routes
-
-These insights support fleet optimization, driver allocation, and revenue strategies.
-
----
-
-## **Introduction**
+Traditional data processing techniques are no longer adequate due to the transportation sector's exponential data increase.  The second stage of a Big Data project that uses **Hadoop MapReduce** and **data visualisation** tools to analyse the **New York City Yellow Taxi Trip dataset** is presented in this article.  The objective is to derive practical insights that can guide business choices about transportation planning and urban mobility.
 
 ### **Background and Context**
 
-NYC’s taxi system generates millions of trip records daily. Analyzing this data requires Big Data technologies like MapReduce, which splits tasks into:
+NYC’s taxi system generates millions of trip records daily. Analysing this data requires Big Data technologies like MapReduce, which splits tasks into:
 - **Map phase**: filtering and transformation
 - **Reduce phase**: aggregation and summarization
 
@@ -51,252 +35,90 @@ NYC’s taxi system generates millions of trip records daily. Analyzing this dat
 
 - Implement MapReduce algorithms
 - Process large-scale taxi data
-- Create meaningful visualizations
+- Create meaningful visualisations
 - Apply Big Data concepts
 - Extract business value
 
-### **Dataset Overview**
 
-**Schema:**
+## **2. Hadoop Overview and Setup**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| VendorID | Integer | TPEP provider ID |
-| tpep_pickup_datetime | Timestamp | Trip start time |
-| tpep_dropoff_datetime | Timestamp | Trip end time |
-| passenger_count | Double | Number of passengers |
-| trip_distance | Double | Distance in miles |
-| PULocationID | Integer | Pickup zone ID |
-| DOLocationID | Integer | Dropoff zone ID |
-| payment_type | Integer | Payment method |
-| fare_amount | Double | Base fare |
-| tip_amount | Double | Tip |
-| total_amount | Double | Total cost |
+### What is Hadoop?
 
-**Statistics:**
-- Size: **10.5 GB**
-- Records: ** 638+ million**
-- Time Period: **January 2019 - December 2024 (6 years)**
-- Format: Parquet (converted to CSV)
+**Apache Hadoop** is an open-source framework designed for the distributed storage and processing of large datasets across clusters of computers. It follows the **MapReduce programming model**, which splits tasks into two main phases:
 
----
+- **Map Phase:** Processes and filters input data into key-value pairs.
+- **Reduce Phase:** Aggregates and summarises the mapped data.
 
-## **Methodology**
+Hadoop is highly scalable and fault-tolerant, making it ideal for handling **Volume**, **Velocity**, and **Variety**—three of the core **V**s of Big Data.
 
-### **Technical Architecture**
+### Local Hadoop Setup
+To simulate a distributed environment locally, I set up a **single-node Hadoop cluster** on my machine using the following steps:
 
-**Stack:**
-- Python 3.x
-- Pandas
-- Custom MapReduce (Python)
-- Matplotlib, Seaborn, Plotly
-- VSCode, Git Bash
+1. Installed Java (required for Hadoop runtime).
+2. Downloaded and configured hadoop-3.4.2.tar.
+3. Set environment variables (HADOOP_HOME, JAVA_HOME, etc.).
+4. Formatted the HDFS namenode and started the Hadoop daemons
 
-### **Data Preprocessing**
-
-Steps:
-1. Load Parquet files
-2. Select relevant columns
-3. Remove missing values
-4. Export to CSV
-5. Validate format
-
-### **MapReduce Implementation**
-
-#### **Job 1: Peak Hour Traffic Analysis**
-
-**Mapper:**
-```python
-def peak_hour_mapper(line):
-    fields = line.strip().split(',')
-    pickup_time = fields[0]
-    location_id = fields[1]
-    dt = datetime.fromisoformat(pickup_time)
-    hour = dt.hour
-    return (hour, location_id, 1)
+```bash
+start-dfs.sh
+start-yarn.sh
 ```
-
-**Reducer:**
-```python
-def peak_hour_reducer(mapped_data):
-    counts = defaultdict(int)
-    for hour, location, count in mapped_data:
-        key = f"{hour}	{location}"
-        counts[key] += count
-    return counts
+5. Created HDFS directories and uploaded the dataset
+```bash
+hdfs dfs -mkdir -p /user/mmathepelothotse/nyc_transport_csv
+hdfs dfs -put yellow_taxi_combined.csv /user/mmathepelothotse/nyc_transport_csv/
 ```
+This setup enabled me to run Python-based MapReduce jobs using Hadoop Streaming.
 
-**Business Value:** Driver allocation and surge pricing.
+## **3. Visualisations and Their Value**
 
----
+After processing the dataset using MapReduce, I created three key visualisations to communicate the insights effectively.
 
-#### **Job 2: Tipping Behavior Analysis**
+### 3.1 Hourly Demand Distribution
+**Visualisation:** Bar chart showing the number of trips per hour.
 
-**Mapper:**
-```python
-def tipping_mapper(line):
-    fields = line.strip().split(',')
-    trip_distance = float(fields[4])
-    fare_amount = float(fields[5])
-    tip_amount = float(fields[6])
-    payment_type = fields[8]
-    tip_percentage = (tip_amount / fare_amount) * 100
-    category = "short" if trip_distance < 2 else "medium" if trip_distance < 10 else "long"
-    return (payment_type, category, tip_percentage)
-```
+**Insight:**
+- Clear morning peak (7–9 AM) and evening peak (5–7 PM).
+- Low activity between 2–5 AM.
 
-**Reducer:** Calculates average tip percentages.
+**Business Value:**
+- Helps optimise driver allocation during peak hours.
+- Supports dynamic pricing strategies to maximise revenue.
 
-**Business Value:** Payment method promotions and driver incentives.
+## **3.2 Tipping Behaviour Heatmap**
+**Visualisation:** Grouped bar chart showing average tip percentage by payment type and trip distance category (short, medium, long).
 
----
+**Insight:**
+- Credit card payments yield higher tips than cash.
+- Medium-distance trips have the highest tip-to-fare ratio.
 
-#### **Job 3: Route Profitability Analysis**
+**Business Value:**
+- Encourages cashless payments to boost driver earnings.
+- Informs driver training and customer engagement strategies.
 
-**Mapper:**
-```python
-def route_profit_mapper(line):
-    fields = line.strip().split(',')
-    pickup_loc = fields[1]
-    dropoff_loc = fields[2]
-    trip_distance = float(fields[4])
-    total_amount = float(fields[7])
-    revenue_per_mile = total_amount / trip_distance
-    route = f"{pickup_loc}-{dropoff_loc}"
-    return (route, total_amount, trip_distance, revenue_per_mile)
-```
+## **3.3 Route Profitability Dashboard**
+**Visualisation:** Interactive dashboard (Plotly) showing:
 
-**Reducer:** Aggregates revenue and ranks top 100 routes.
+Top 100 profitable routes
+Revenue per mile
+Total revenue per route
 
-**Business Value:** Route optimization and strategic positioning.
+**Insight:**
+- Routes to/from airports and business districts are most profitable.
+- Some short-distance routes yield high revenue per mile.
 
----
+**Business Value:**
+- Enables strategic driver positioning.
+- Supports route-based pricing models and fleet optimisation.
 
-## **Results and Analysis**
+## **4. Conclusion**
+This phase of the project demonstrated the power of Hadoop MapReduce in processing large-scale transportation data. The visualisations provided clear, actionable insights that can help:
 
-### **Peak Hour Traffic Patterns**
+- Improve operational efficiency
+- Enhance customer satisfaction
+- Maximise revenue through data-driven strategies
 
-**Findings:**
-- Morning Peak: 7–9 AM
-- Evening Peak: 5–7 PM (highest)
-- Off-Peak: 2–5 AM
-- Weekend: Extended evening peaks
-
-**Implications:**
-- Dynamic pricing during 5–7 PM
-- 30–40% more drivers during peaks
-- Reduce fleet during off-peak
-- Incentives for off-peak riders
-
----
-
-### **Tipping Behavior Insights**
-
-**Findings:**
-- Credit card: Avg [A]% tip
-- Cash: Avg [B]% tip
-- Short trips: [C]%
-- Medium trips: [D]%
-- Long trips: [E]%
-
-**Implications:**
-- Promote cashless payments
-- Optimize tip suggestions
-- Educate drivers on service quality
-- Loyalty programs for medium trips
-
----
-
-### **Route Profitability Analysis**
-
-**Top 5 Routes:**
-
-| Route | Total Revenue | Trips | Avg $/Mile |
-|-------|---------------|-------|------------|
-| [Route 1] | $[Amount] | [Count] | $[Rate] |
-| [Route 2] | $[Amount] | [Count] | $[Rate] |
-| [Route 3] | $[Amount] | [Count] | $[Rate] |
-| [Route 4] | $[Amount] | [Count] | $[Rate] |
-| [Route 5] | $[Amount] | [Count] | $[Rate] |
-
-**Implications:**
-- Position drivers near profitable zones
-- Airport shuttle services
-- Route-specific driver programs
-- Corporate partnerships
-
----
-
-## **Visualizations**
-
-### **1. Hourly Demand Distribution**
-- Bar chart showing pickups by hour
-- Dual peaks: morning and evening
-
-### **2. Tipping Heatmap**
-- Grouped bar chart: tip % by payment type and distance
-
-### **3. Route Profitability Dashboard**
-- Interactive Plotly chart: revenue and $/mile
-
----
-
-## **Technical Challenges and Solutions**
-
-### **1. Hadoop Configuration**
-- **Issue:** Local setup errors
-- **Solution:** Simulated MapReduce in Python
-
-### **2. Large Dataset**
-- **Issue:** Memory constraints
-- **Solution:** Line-by-line streaming
-
-### **3. Data Quality**
-- **Issue:** Missing/outlier values
-- **Solution:** Robust error handling in mappers
-
----
-
-## **Business Value and Impact**
-
-### **Operational Efficiency**
-- 25–30% better driver utilization
-- 15% reduction in idle time
-- Lower fuel costs
-
-### **Revenue Optimization**
-- Surge pricing
-- High-profit route targeting
-- Card payments increase tips by [X]%
-
-### **Customer Experience**
-- Reduced wait times
-- Better service availability
-- Transparent pricing
-
-### **Strategic Planning**
-- Market expansion
-- Competitive benchmarking
-- Data-driven investment decisions
-
----
-
-## **Conclusion**
-MapReduce successfully applied to NYC taxi data, revealing patterns in demand, tipping, and profitability. Visualizations helped communicate insights effectively.
-
-- Real-time analytics with Spark
-- Predictive modeling
-- Geospatial mapping
-- Weather/event correlation
-- Multi-year trend analysis
-- Driver behavior studies
-
-### **Key takeaways**
-- Efficient MapReduce design is key
-- Preprocessing impacts performance
-- Error handling is essential
-- Visuals must be clear
-- Business context drives value
+The combination of distributed processing and effective visualisation bridges the gap between raw data and business intelligence.
 
 ---
 
@@ -317,10 +139,4 @@ MapReduce successfully applied to NYC taxi data, revealing patterns in demand, t
 
 ### **B. Video Demonstration**
 `https://[your-video-platform]/[video-id]`
-
-### **C. Code Statistics**
-- Lines of Code: [X]
-- Python Files: [Y]
-- Processing Time: [Z] minutes
-- Output Size: [A] MB
 
