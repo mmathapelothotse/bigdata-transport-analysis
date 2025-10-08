@@ -51,18 +51,113 @@ Hadoop is highly scalable and fault-tolerant, making it ideal for handling **Vol
 To simulate a distributed environment locally, I set up a **single-node Hadoop cluster** on my machine using the following steps:
 
 1. Installed Java (required for Hadoop runtime).
-2. Downloaded and configured `hadoop-3.4.2.tar`.
-3. Set environment variables (`HADOOP_HOME`, `JAVA_HOME`, etc.).
-4. Formatted the HDFS namenode and started the Hadoop daemons
+    - Download the Java installation file
+    - Create a folder under the C drive and install Java directly into the Java folder created.
+    - Cut and paste jdk folder in the Program Files into the Java folder created. Delete the Java folder under Program Files
+    - configure Java environment - env. var. --> name: `JAVA_HOME`, value: `C:\Java\jdk1.8.0_*\bin` copied path from bin folder under Java
+    - configure system variables, edit `path` and create new variable - paste: `C:\Java\jdk1.8.0_*\bin` done
+    - check by running `java` on CLI
+  
+      
+3. Downloaded and configured.
+    - download `hadoop-3.4.2.tar`, unzip, copy it to the C drive and rename it to `Hadoop`
+    - in etc folder, edit `hadoop-env` to paste `C:\Java\jdk1.8.0_*\bin`, resulting in `set JAVA_HOME=C:\Java\jdk1.8.0_*\bin`
+    - configure Java environment - env. var. --> name: `HADOOP_HOME`, value: `C:\hadoop\bin` copied path from bin folder under Java
+    - configure system variables, edit `path` and create new variable - paste: `C:\hadoop\bin` and `C:\hadoop\sbin` done
+   - check by running `hadoop` on CLI
+  
+     
+3. Set configurations for Hadoop to run on our system
+    - got to `hadoop -> etc -> hadoop` folder to edit `core-site.xml` file
+    - add property with name and value
+   ```xml
+    <configuration>
+    <property>
+      <name>fs.defaultFS</name>
+      <value>hdfs://localhost:8020</value>
+    </property>
+    </configuration>
+   ```
+   - got to `hadoop -> etc -> hadoop` folder to edit `httpfs-site.xml` file
+    - add property with name and value
+   ```xml
+    <configuration>
+    <property>
+      <name>dfs.replication</name>
+      <value>1</value>
+    </property>
+   <property>
+      <name>dfs.namenode.name.dir</name>
+      <value>C:\hadoop\data\namenode</value>
+    </property>
+   <property>
+      <name>dfs.datanode.name.dir<</name>
+      <value>C:\hadoop\data\datanode</value>
+    </property>
+    </configuration>
+   ```
+   - create `data` folder and `namenode` & `datanode` inside it
+   - go to `etc` -> `hadoop` to edit `mapred-site.xml`
+   ```xml
+    <configuration>
+    <property>
+    <name>mapreduce.framework.name</name>
+    <value>yarn</value>
+    </property>
+    <property>
+    <name>mapreduce.map.java.opts</name>
+    <value>-Xmx4096m</value>
+    </property>
+    <property>
+    <name>mapreduce.reduce.java.opts</name>
+    <value>Xmx6144m</value>
+    </property>
+    </configuration>
+   ```
+   - go to `etc` -> `hadoop` to edit `yarn-site.xml`
+   ```xml
+    <configuration>
+    <property>
+      <name>yarn.nodemanager.aux-services</name>
+      <value>mapreduce_shuffle</value>
+    </property>
+   <property>
+      <name>yarn.nodemanager.auxservices.shuffle.class</name>
+      <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+    </property>
+    </configuration>
+4. Fixed `bin` folder to run on Windows
+- Delete the `bin` folder inside the `hadoop` folder
+- Download the new bin folder `https://drive.google.com/file/d/1nCN_jK7EJF2DmPUUxgOggnvJ6k6tksYz/view` and paste it inside the `hadoop` folder
+- Run `winutils.exe` file - it will suggest to download `MSVCR120.dll` file and paste the file inside `C://Windows/System32/` folder
+5. Download and install the `C++ redistributable` for Visual Studio
 
+6. Format `namenode`
 ```bash
-start-dfs.sh
-start-yarn.sh
+hdfs namenode -format
+```
+Look for `name node successfully formatted`
+
+7. Launch `Hadoop` cluster
+- in root directory, run `cd sbin`, i.e. `C:hadoop\sbin`
+- start `Hadoop` cluster: `namenode` and `datanode`
+```bash
+start-dfs.cmd
+```
+- start `resource manager`
+```bash
+start-yarn.cmd
+```
+- check on `localhost:9870`
+- check cluster size and number of nodes: `localhost:80888`
+- stop all nodes
+```bash
+stop-all.cmd
 ```
 5. Created HDFS directories and uploaded the dataset
 ```bash
-hdfs dfs -mkdir -p /user/mmathepelothotse/nyc_transport_csv
-hdfs dfs -put yellow_taxi_combined.csv /user/mmathepelothotse/nyc_transport_csv/
+hdfs dfs -mkdir -p /nyc_tlc_data
+hdfs dfs -put yellow_taxi_combined.csv /nyc_tlc_data
 ```
 This setup enabled me to run Python-based MapReduce jobs using Hadoop Streaming.
 
