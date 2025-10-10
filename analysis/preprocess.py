@@ -4,10 +4,10 @@ import pandas as pd
 
 def convert_parquet_to_csv():
     """Convert multiple Parquet files to a single CSV for Hadoop MapReduce."""
-    input_dir = 'data/input'
+    input_dir = 'bigdata-transport-analysis\data\input'
     parquet_files = glob.glob(os.path.join(input_dir, '*.parquet'))
 
-    combined_csv = os.path.join(input_dir, 'yellow_taxi_combined.csv')
+    combined_csv = os.path.join(input_dir, 'green_taxi_combined.csv')
     # Remove existing combined file if it exists
     if os.path.exists(combined_csv):
         os.remove(combined_csv)
@@ -16,7 +16,7 @@ def convert_parquet_to_csv():
     for file in parquet_files:
         print(f'Reading {file}...')
         df = pd.read_parquet(file)
-        df_subset = df[['tpep_pickup_datetime', 'PULocationID', 'DOLocationID', 
+        df_subset = df[['lpep_pickup_datetime', 'lpep_dropoff_datetime', 'PULocationID', 'DOLocationID', 
                         'passenger_count', 'trip_distance', 'fare_amount', 
                         'tip_amount', 'total_amount', 'payment_type']]
         if first:
