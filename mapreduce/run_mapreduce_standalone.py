@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Standalone MapReduce Runner - No Hadoop Required
-This simulates MapReduce using Python for educational purposes
+Standalone MapReduce Runner
+This simulates MapReduce using Python
 """
 
 import os
@@ -11,47 +11,15 @@ from collections import defaultdict
 from datetime import datetime
 
 # Create output directory
-os.makedirs('data/output', exist_ok=True)
+os.makedirs('bigdata-transport-analysis\data\output', exist_ok=True)
 
 print("=" * 70)
-print("STANDALONE MAPREDUCE PIPELINE - NO HADOOP NEEDED")
+print("MAPREDUCE PIPELINE")
 print("=" * 70)
 
-# ============================================================================
-# JOB 1: PEAK HOUR ANALYSIS
-# ============================================================================
-def peak_hour_mapper(line):
-    """Map function: Extract hour and location from each trip"""
-    try:
-        fields = line.strip().split(',')
-        if len(fields) < 2:
-            return None
-            
-        pickup_time = fields[0]
-        location_id = fields[1]
-        
-        # Extract hour from timestamp
-        dt = datetime.fromisoformat(pickup_time.replace(' ', 'T'))
-        hour = dt.hour
-        
-        return (hour, location_id, 1)
-    except:
-        return None
-
-def peak_hour_reducer(mapped_data):
-    """Reduce function: Count trips per hour-location"""
-    counts = defaultdict(int)
-    
-    for item in mapped_data:
-        if item:
-            hour, location, count = item
-            key = f"{hour}\t{location}"
-            counts[key] += count
-    
-    return counts
 
 # ============================================================================
-# JOB 2: TIPPING BEHAVIOR ANALYSIS
+# JOB 1: TIPPING BEHAVIOR ANALYSIS
 # ============================================================================
 def tipping_mapper(line):
     """Map function: Analyze tipping patterns"""
@@ -60,10 +28,10 @@ def tipping_mapper(line):
         if len(fields) < 9:
             return None
             
-        trip_distance = float(fields[4])
-        fare_amount = float(fields[5])
-        tip_amount = float(fields[6])
-        payment_type = fields[8]
+        trip_distance = float(fields[8])
+        fare_amount = float(fields[9])
+        tip_amount = float(fields[12])
+        payment_type = fields[17]
         
         if fare_amount <= 0:
             return None
@@ -101,7 +69,7 @@ def tipping_reducer(mapped_data):
     return results
 
 # ============================================================================
-# JOB 3: ROUTE PROFITABILITY ANALYSIS
+# JOB 2: ROUTE PROFITABILITY ANALYSIS
 # ============================================================================
 def route_profit_mapper(line):
     """Map function: Calculate route profitability"""
@@ -109,11 +77,11 @@ def route_profit_mapper(line):
         fields = line.strip().split(',')
         if len(fields) < 8:
             return None
-            
-        pickup_loc = fields[1]
-        dropoff_loc = fields[2]
-        trip_distance = float(fields[4])
-        total_amount = float(fields[7])
+        
+        pickup_loc = fields[5]
+        dropoff_loc = fields[6]
+        trip_distance = float(fields[8])
+        total_amount = float(fields[16])
         
         if trip_distance <= 0:
             return None
@@ -164,7 +132,7 @@ def run_mapreduce_job(job_name, mapper_func, reducer_func, output_file):
     print(f"{'=' * 70}")
     
     # Find input files
-    csv_files = glob.glob('data/output/green_tripdata_*.csv')
+    csv_files = glob.glob('bigdata-transport-analysis\data\output\green_tripdata_*.csv')
     
     if not csv_files:
         print("❌ ERROR: No CSV files found in data/output/")
@@ -186,7 +154,7 @@ def run_mapreduce_job(job_name, mapper_func, reducer_func, output_file):
                 if result:
                     mapped_data.append(result)
                 
-                if total_lines % 100000 == 0:
+                if total_lines % 1000000 == 0:
                     print(f"   Processed {total_lines:,} lines... ({len(mapped_data):,} valid)")
     
     print(f"✓ MAP Complete: {total_lines:,} lines → {len(mapped_data):,} mapped records")
@@ -217,14 +185,12 @@ if __name__ == "__main__":
     print(f"📅 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     jobs = [
-        ("Peak Hour Analysis", peak_hour_mapper, peak_hour_reducer, 
-         "data/output/peak_hours.txt"),
-        
         ("Tipping Behavior Analysis", tipping_mapper, tipping_reducer, 
-         "data/output/tipping_behavior.txt"),
+         "bigdata-transport-analysis/data/output/tipping_behavior.txt"),
         
         ("Route Profitability Analysis", route_profit_mapper, route_profit_reducer, 
-         "data/output/route_profitability.txt")
+         "bigdata-transport-analysis/data/output/route_profitability.txt")
+
     ]
     
     success_count = 0
